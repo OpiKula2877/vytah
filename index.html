@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PelcS – výtah s tobogány</title>
+<style>
+  :root {
+    --ink: #2d3748; --mute: #718096; --line: #cbd5e0; --bg: #f4f6f9; --card: #fff;
+    --accent: #2b6cb0; --accent-d: #1e4e82;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); background: var(--bg); }
+  header { background: var(--accent); color: #fff; padding: 14px 20px; }
+  header h1 { margin: 0; font-size: 20px; }
+  header p { margin: 2px 0 0; opacity: .9; font-size: 14px; }
+  main { max-width: 760px; margin: 0 auto; padding: 20px 16px 40px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 18px 22px; margin-bottom: 16px; }
+  h2 { font-size: 18px; margin: 0 0 8px; border-bottom: 2px solid #edf2f7; padding-bottom: 4px; }
+  p { margin: 6px 0 12px; }
+  .note { color: var(--mute); font-size: 14px; }
+  code { font-family: ui-monospace, Consolas, "Courier New", monospace; font-size: 13px; background: #edf2f7; padding: 1px 5px; border-radius: 4px; }
+  .btn { display: inline-block; font: inherit; padding: 8px 18px; border: 1px solid var(--line); background: #fff; border-radius: 6px; color: var(--ink); text-decoration: none; }
+  .btn:hover { background: #edf2f7; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { background: var(--accent-d); }
+  footer { text-align: center; margin-top: 8px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>PelcS – výtah s tobogány</h1>
+  <p>Simulace dvojvýtahu bez závaží a tobogánů do přízemí. Vyber si verzi, otevře se na nové kartě.</p>
+</header>
+
+<main>
+
+  <section class="card">
+    <h2>PelcS</h2>
+    <p>Tohle je simulace mé vlastní vize a nápadů. Vznikla, když jsem přemýšlel, jak vylepšit původní nápad výtahu o různé vymoženosti, až mě napadl klasický suchý tobogán, vhodný pro dospělé i pro děti.</p>
+    <p>Lidé si mohou vybrat: buď tobogán, který je rychlejší, i když není zrovna formální, nebo výtah. Ten je navržený tak, že nepotřebuje žádné závaží. Jako protiváha mu slouží druhá kabina a té zase ta první. Je krásné, jaké zázraky nám fyzika dovoluje.</p>
+    <a class="btn primary" href="PelcS.html" target="_blank" rel="noopener">Otevřít PelcS.html</a>
+  </section>
+
+  <section class="card">
+    <h2>PelcS – férovka</h2>
+    <p class="note">Aby bylo srovnání s původním výtahem férové: původní výtah má jednu kabinu pro 6 cestujících, já jako inženýr ale používám kabiny dvě. To by nebylo fér, a proto tato verze počítá se dvěma kabinami, z nichž každá pojme nejvýše 3 cestující. Dohromady tedy uvezou stejně lidí jako původní výtah.</p>
+    <a class="btn primary" href="PelcS-ferovka.html" target="_blank" rel="noopener">Otevřít PelcS-ferovka.html</a>
+  </section>
+
+  <section class="card">
+    <h2>Zadání</h2>
+    <p>Soubor se zadáním (lidé, kdy přicházejí a kam jedou). Stáhni si ho a načti do simulace.</p>
+    <a class="btn" href="zadani-bezny-den-ve-skole-B746-8C6D.json" download>Stáhnout zadani-bezny-den-ve-skole-B746-8C6D.json</a>
+  </section>
+
+  <footer>
+    <a class="btn primary" href="https://github.com/OpiKula2877/vytah" target="_blank" rel="noopener">Zdroje zde</a>
+  </footer>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,1269 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PelcS – dvojvýtah s tobogány</title>
+<style>
+  :root {
+    --ink: #2d3748; --mute: #718096; --line: #cbd5e0; --bg: #f4f6f9; --card: #fff;
+    --accent: #2b6cb0; --accent-d: #1e4e82; --warn: #c27c0e; --bad: #c53030; --ok: #2f9e44;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); background: var(--bg); }
+  header { background: var(--accent); color: #fff; padding: 14px 20px; }
+  header h1 { margin: 0; font-size: 20px; }
+  header p { margin: 2px 0 0; opacity: .9; font-size: 14px; }
+  nav { display: flex; gap: 4px; padding: 10px 20px 0; max-width: 1200px; margin: 0 auto; }
+  nav button { border: 1px solid var(--line); border-bottom: 0; background: #e8edf3; color: var(--ink); padding: 8px 18px; border-radius: 8px 8px 0 0; font: inherit; cursor: pointer; }
+  nav button.on { background: var(--card); font-weight: 600; color: var(--accent-d); }
+  main { max-width: 1200px; margin: 0 auto; padding: 0 20px 40px; }
+  .tab { display: none; background: var(--card); border: 1px solid var(--line); border-radius: 0 8px 8px 8px; padding: 18px 22px; }
+  .tab.on { display: block; }
+  h2 { font-size: 18px; margin: 22px 0 8px; border-bottom: 2px solid #edf2f7; padding-bottom: 4px; }
+  h2:first-child { margin-top: 0; }
+  h3 { font-size: 15px; margin: 18px 0 6px; }
+  code, pre { font-family: ui-monospace, Consolas, "Courier New", monospace; font-size: 13px; }
+  code { background: #edf2f7; padding: 1px 5px; border-radius: 4px; }
+  pre { background: #1f2937; color: #e5e7eb; padding: 12px 14px; border-radius: 8px; overflow: auto; line-height: 1.45; }
+  pre code { background: none; padding: 0; color: inherit; }
+  table { border-collapse: collapse; width: 100%; margin: 8px 0 14px; font-size: 14px; }
+  th, td { border: 1px solid var(--line); padding: 5px 9px; text-align: left; vertical-align: top; }
+  th { background: #edf2f7; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  button, .btn { font: inherit; padding: 6px 14px; border: 1px solid var(--line); background: #fff; border-radius: 6px; cursor: pointer; color: var(--ink); }
+  button:hover { background: #edf2f7; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.primary:hover { background: var(--accent-d); }
+  .drop { border: 2px dashed var(--line); border-radius: 10px; padding: 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .drop.over { border-color: var(--accent); background: #ebf4ff; }
+  textarea { width: 100%; font: 13px ui-monospace, Consolas, monospace; border: 1px solid var(--line); border-radius: 6px; padding: 8px; margin-top: 8px; }
+  .msg { margin: 10px 0 0; padding: 8px 12px; border-radius: 6px; font-size: 14px; }
+  .msg.err { background: #fff5f5; border: 1px solid #feb2b2; color: #9b2c2c; }
+  .msg.warn { background: #fffaf0; border: 1px solid #fbd38d; color: #8a5a00; }
+  .msg ul { margin: 4px 0 0; padding-left: 20px; }
+  .info { margin-top: 12px; color: var(--mute); font-size: 14px; }
+  .info b { color: var(--ink); }
+  .grid2 { display: grid; grid-template-columns: minmax(320px, 680px) 1fr; gap: 22px; margin-top: 16px; align-items: start; }
+  @media (max-width: 900px) { .grid2 { grid-template-columns: 1fr; } }
+  canvas { width: 100%; display: block; background: #fbfcfe; border: 1px solid var(--line); border-radius: 8px; }
+  .ctrl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+  .ctrl input[type=range] { flex: 1; min-width: 120px; }
+  .clock { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 100px; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .seg label { padding: 5px 12px; cursor: pointer; border-right: 1px solid var(--line); user-select: none; }
+  .seg label:last-child { border-right: 0; }
+  .seg input { display: none; }
+  .seg label.on { background: var(--accent); color: #fff; }
+  .metrics td:first-child { color: var(--mute); }
+  .metrics td:not(:first-child), .metrics th:not(:first-child) { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .metrics .cur { background: #ebf4ff; }
+  .metrics th { white-space: nowrap; }
+  .metrics tr.sep td { border-top: 2px solid var(--line); }
+  .log { max-height: 160px; overflow: auto; background: #f7fafc; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; font: 12.5px ui-monospace, Consolas, monospace; white-space: pre-wrap; }
+  details { margin-top: 14px; }
+  summary { cursor: pointer; font-weight: 600; }
+  .people-wrap { max-height: 320px; overflow: auto; }
+  .manual { max-width: 880px; }
+  .manual p, .manual li { margin: 6px 0; }
+  .manual .note { background: #ebf8ff; border-left: 4px solid var(--accent); padding: 8px 12px; border-radius: 4px; margin: 10px 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>PelcS – dvojvýtah bez závaží s tobogány</h1>
+  <p>Dvě kabiny spojené lanem přes motor (jedna jede nahoru, druhá dolů) a z každého patra tobogán do přízemí. Načti zadání (JSON) a sleduj, jak budova rozveze lidi.</p>
+</header>
+
+<nav>
+  <button type="button" data-tab="sim" class="on">Simulace</button>
+  <button type="button" data-tab="manual">Manuál</button>
+</nav>
+
+<main>
+
+<!-- ===================================================================== -->
+<section class="tab on" id="tab-sim">
+  <h2>1 · Zadání</h2>
+  <div id="drop" class="drop">
+    <span>Přetáhni sem soubor zadání (<code>.json</code>)</span>
+    <button type="button" id="pickBtn" class="primary">Vybrat soubor…</button>
+    <input type="file" id="file" accept=".json,application/json" hidden>
+    <button type="button" id="pasteBtn">Vložit text</button>
+    <button type="button" id="demoBtn">Ukázkové zadání</button>
+  </div>
+  <div id="pasteBox" hidden>
+    <textarea id="pasteText" rows="5" spellcheck="false" placeholder="Sem vlož obsah souboru se zadáním (JSON)"></textarea>
+    <button type="button" id="pasteApply">Použít</button>
+  </div>
+  <div id="loadMsg"></div>
+  <div id="scnInfo" class="info" hidden></div>
+
+  <div id="result" hidden>
+    <h2>2 · Simulace</h2>
+    <div class="grid2">
+      <div>
+        <div class="ctrl" style="margin:0 0 8px">
+          <span>Varianta</span>
+          <span class="seg" id="varSeg">
+            <label class="on"><input type="radio" name="variant" value="on" checked>S tobogány</label>
+            <label><input type="radio" name="variant" value="off">Bez tobogánů</label>
+          </span>
+          <span style="margin-left:8px">Zobrazení</span>
+          <span class="seg" id="viewSeg">
+            <label class="on"><input type="radio" name="view" value="all" checked>Vše</label>
+            <label><input type="radio" name="view" value="lift">Výtah</label>
+            <label id="viewSlideLbl"><input type="radio" name="view" value="slide">Tobogány</label>
+          </span>
+        </div>
+        <canvas id="cv"></canvas>
+        <div class="ctrl">
+          <button type="button" id="playBtn" class="primary" style="min-width:90px">▶ Spustit</button>
+          <button type="button" id="restartBtn" title="Přehrát od začátku">⏮</button>
+          <span class="clock" id="clock">0:00</span>
+          <label>Rychlost
+            <select id="speed">
+              <option value="1">1×</option><option value="2">2×</option><option value="5" selected>5×</option>
+              <option value="10">10×</option><option value="30">30×</option><option value="100">100×</option>
+            </select>
+          </label>
+        </div>
+        <div class="ctrl"><input type="range" id="scrub" min="0" max="1000" value="0"></div>
+        <div class="info" id="liveInfo"></div>
+      </div>
+      <div>
+        <h3 style="margin-top:0">Výsledek</h3>
+        <div id="runMsg"></div>
+        <table class="metrics" id="metrics"></table>
+        <details><summary>Výpisy z <code>console.log</code></summary><div class="log" id="log">(nic)</div></details>
+        <details><summary>Cestující jednotlivě</summary><div class="people-wrap"><table id="peopleTbl"></table></div></details>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================================================================== -->
+<section class="tab" id="tab-manual"><div class="manual">
+
+<h2>Jak budova funguje</h2>
+<p>Stránka načte <b>zadání</b> (stejný soubor <code>.json</code> jako pro <code>vytah.html</code>) a simuluje budovu se dvěma druhy dopravy:</p>
+<h3>Dvojvýtah bez závaží</h3>
+<ul>
+  <li>Dvě kabiny – <b>A</b> (levá šachta) a <b>B</b> (pravá šachta) – visí na jednom laně přehozeném přes kolo motoru nahoře. Kabina B slouží jako protizávaží kabiny A.</li>
+  <li>Když A jede nahoru, B jede dolů, a naopak. Výška kabiny B je vždy <code>(počet pater − 1) · výška patra − výška A</code>. Když je A v patře <i>f</i>, je B v patře <code>počet pater − 1 − f</code> (zrcadlo). Při 8 patrech: A v 7. ⇔ B v přízemí, A ve 3. ⇔ B ve 4.</li>
+  <li>Obě kabiny proto <b>zastavují vždy současně</b>, obě otevřou dveře, v obou se vystupuje a nastupuje. Dveře se zavřou, až jsou hotové obě kabiny.</li>
+  <li>Každá kabina má kapacitu <code>lift.capacity</code>. Rychlost a zrychlení jsou ze zadání (<code>lift.speed</code>, <code>lift.acceleration</code>), stejně jako ve vytah.html.</li>
+</ul>
+<h3>Tobogány</h3>
+<ul>
+  <li>V každém patře 1 až (počet pater − 1) je <b>vpravo od výtahu</b> vstup na tobogán. Trubka vede za šachtami dolů do <b>přízemí vlevo od výtahu</b>.</li>
+  <li>V přízemí je tolik otvorů, kolik je tobogánů. Otvor č. 1 (nejvíc vpravo, u výtahu) je z 1. patra, nejvíc vlevo je otvor z nejvyššího patra.</li>
+  <li>Na tobogánu smí být <b>vždy jen jeden člověk</b>. U vstupu je semafor: <b style="color:#c53030">červená</b> = obsazeno (někdo si sedá nebo jede), <b style="color:#2f9e44">zelená</b> = volno. Zelená se rozsvítí, jakmile předchozí dojede dolů.</li>
+  <li>Fyzika: trubka má sklon <code>slide.angle</code>, délka z patra <i>f</i> je <code>f · výška patra / sin(sklon)</code>. Zrychlení je <code>g · (sin − tření · cos)</code>, rychlost je omezena odporem vzduchu na <code>slide.maxSpeed</code>. Usednutí trvá <code>slide.enter</code>, vylezení dole <code>slide.exit</code> (obojí × <code>slow</code> dané osoby).</li>
+</ul>
+<h3>Jak se lidé rozhodují</h3>
+<ul>
+  <li>Kdo jede <b>do přízemí</b> z vyššího patra, odhadne si čas tobogánem (kolik lidí stojí ve frontě, kolik zbývá tomu, kdo právě jede, jeho vlastní jízda) a čas výtahem (jak daleko je nejbližší kabina, kolik je v budově zastávek, kolik lidí je před ním). Vybere rychlejší cestu.</li>
+  <li>Kdo čeká na výtah, každou sekundu odhad zopakuje. Když je tobogán aspoň o 3 s rychlejší, přejde do fronty na tobogán. Z fronty na tobogán už nikdo neodchází.</li>
+  <li>Kdo jede jinam než do přízemí, jede vždy výtahem.</li>
+</ul>
+
+<h2>Varianty</h2>
+<p>Po načtení zadání se spočítají <b>dvě varianty</b> na stejných lidech: <b>S tobogány</b> (lidé do přízemí si vyberou rychlejší cestu) a <b>Bez tobogánů</b> (všichni jezdí jen dvojvýtahem). Přepínačem „Varianta“ vybereš, kterou chceš přehrát. Výsledky obou jsou vedle sebe v tabulce, vybraná varianta je podbarvená.</p>
+
+<h2>Zobrazení</h2>
+<ul>
+  <li><b>Vše</b> – výtah i tobogány s lidmi.</li>
+  <li><b>Výtah</b> – lidé ve frontách na výtah a v kabinách, tobogány jsou zešedlé.</li>
+  <li><b>Tobogány</b> – lidé ve frontách na tobogán, na trubkách a u výstupů, výtah je zešedlý.</li>
+</ul>
+<p>Číslo nad hlavou = kam člověk jede, červenější hlava = čeká dlouho, proužek na těle = pomalý člověk.</p>
+
+<h2>Algoritmus výtahu</h2>
+<div class="note">Algoritmus je v souboru <code>PelcS.html</code> v bloku <code>&lt;script id="algoritmus"&gt;</code>. Výchozí algoritmus je „chytrý“ (sběrný, viz komentáře v kódu). Po úpravě ulož soubor a obnov stránku (F5), zadání se načte samo.</div>
+<table>
+  <tr><th>Funkce</th><th>Povinná?</th><th>Kdy se volá</th><th>Co vrací</th></tr>
+  <tr><td><code>rozhodni(stav)</code></td><td>ano</td><td>pořád dokola (každých 0,05 s), když výtah stojí se zavřenými dveřmi nebo jede</td><td>patro, kam má jet <b>kabina A</b> (B jede zrcadlově), nebo <code>null</code></td></tr>
+  <tr><td><code>nastup(stav, osoba, kabina)</code></td><td>ne</td><td>při otevřených dveřích pro každého čekajícího v patře kabiny; <code>kabina</code> je <code>'A'</code> nebo <code>'B'</code></td><td><code>true</code> = smí nastoupit</td></tr>
+  <tr><td><code>zacatek(stav)</code></td><td>ne</td><td>jednou před simulací</td><td>nic</td></tr>
+</table>
+<p>Pravidla pohybu jsou stejná jako ve vytah.html: jedoucí výtah se nemůže otočit, <code>stav.nejblizsiZastaveni</code> je nejbližší patro (kabiny A), kde stihne zastavit. Vrátíš-li patro, kde kabina A právě stojí, otevřou se dveře, jen pokud v patře A nebo B někdo vystupuje nebo čeká.</p>
+
+<h3>Objekt <code>stav</code></h3>
+<table>
+  <tr><th>Vlastnost</th><th>Význam</th></tr>
+  <tr><td><code>cas</code></td><td>simulovaný čas (s)</td></tr>
+  <tr><td><code>patro</code>, <code>poloha</code>, <code>rychlost</code>, <code>smer</code>, <code>posledniSmer</code>, <code>stoji</code>, <code>cil</code>, <code>nejblizsiZastaveni</code></td><td>totéž co ve vytah.html, vše pro <b>kabinu A</b> (B má vše zrcadlově, směr opačný)</td></tr>
+  <tr><td><code>kabinaA</code>, <code>kabinaB</code></td><td>objekty <code>{ patro, vKabine, volno }</code>: patro, kde kabina je (zaokrouhleně), lidé v ní (<code>id, odkud, cil, od, nastoupil</code>) a počet volných míst</td></tr>
+  <tr><td><code>cekajici</code></td><td>lidé čekající na <b>výtah</b> (<code>id, patro, smer, od</code> a <code>cil</code> jen při <code>info.destVisible</code>). Lidé ve frontě na tobogán tu nejsou</td></tr>
+  <tr><td><code>kapacita</code>, <code>pocetPater</code>, <code>vyskaPatra</code></td><td>parametry budovy</td></tr>
+  <tr><td><code>zrcadlo(f)</code></td><td>funkce: v jakém patře je B, když je A v patře <code>f</code> (a naopak) = <code>pocetPater − 1 − f</code></td></tr>
+</table>
+
+<h2>Hodnocení</h2>
+<table>
+  <tr><th>Veličina</th><th>Význam</th></tr>
+  <tr><td>Rozvezeno, Hotovo v čase</td><td>kolik lidí dojelo (výtahem i tobogánem) a kdy dojel poslední</td></tr>
+  <tr><td>Průměrné čekání</td><td>od příchodu do nástupu do kabiny, u tobogánu do usednutí na tobogán</td></tr>
+  <tr><td>Průměrná jízda</td><td>od nástupu do výstupu (u tobogánu včetně usednutí a vylezení)</td></tr>
+  <tr><td>Průměrně celkem</td><td>od příchodu do cíle – hlavní číslo</td></tr>
+  <tr><td>Do přízemí tobogánem / výtahem</td><td>kolik lidí jedoucích dolů do přízemí si vybralo kterou cestu, a jejich průměrný celkový čas</td></tr>
+  <tr><td>Přešli na tobogán</td><td>kolik lidí opustilo frontu na výtah, protože byl tobogán rychlejší</td></tr>
+</table>
+
+<h2>Zadání: formát JSON</h2>
+<p>Stejný formát jako pro vytah.html (<code>"format": "vytah-zadani"</code>, <code>lift</code>, <code>boarding</code>, <code>info</code>, <code>evaluation</code>, <code>people</code> s <code>t, from, to, slow</code>). Otisk zadání se počítá stejně, takže stejný soubor má stejný otisk v obou simulátorech.</p>
+<p>Navíc lze přidat nepovinný objekt <code>slide</code> s parametry tobogánů (když chybí, použijí se výchozí hodnoty):</p>
+<table id="rangeTbl"></table>
+
+</div></section>
+
+</main>
+
+<!-- ===================================================================== -->
+<!--  ALGORITMUS DVOJVÝTAHU  –  TADY UPRAVUJ                               -->
+<!-- ===================================================================== -->
+<script id="algoritmus">
+/* CHYTRÝ SBĚRNÝ ALGORITMUS PRO DVOJVÝTAH
+ *
+ * Kabiny A a B jsou spojené lanem: když A jede nahoru, B jede dolů.
+ * Řídí se jen poloha kabiny A; patro f kabiny B odpovídá poloze A = zrcadlo(f).
+ *
+ * Všechny požadavky (výstupy i čekající) se proto převedou na „souřadnici kabiny A“:
+ *  - člověk v A s cílem c       → zastávka c
+ *  - člověk v B s cílem c       → zastávka zrcadlo(c)
+ *  - čekající v patře f         → A ho může vzít v poloze f (A jede jeho směrem),
+ *                                 B v poloze zrcadlo(f) (A pak jede OPAČNĚ než on chce).
+ * Výtah jede jedním směrem a zastavuje u všeho, co je po cestě a sedí směrem.
+ * Když po cestě nic není, dojede k nejvzdálenějšímu požadavku a otočí se.
+ */
+
+var smerA = 1;   // kam právě „zametá“ kabina A (1 nahoru, -1 dolů)
+
+function zacatek(stav) {
+  smerA = 1;
+}
+
+// Směr, kterým kabinu A nutí jet lidé, kteří už v kabinách jsou (0 = obě kabiny prázdné).
+function smerPasazeru(stav) {
+  var top = stav.pocetPater - 1, x = stav.poloha / stav.vyskaPatra, d = 0;
+  stav.kabinaA.vKabine.forEach(function (o) { var s = Math.sign(o.cil - x); if (s) d = s; });
+  stav.kabinaB.vKabine.forEach(function (o) { var s = Math.sign(o.cil - (top - x)); if (s) d = -s; });
+  return d;
+}
+
+function rozhodni(stav) {
+  var top = stav.pocetPater - 1, x = stav.poloha / stav.vyskaPatra;
+  var vystupy = [], nabrani = [];   // nabrani: { x: poloha A, smer: kam pak A pojede }
+
+  stav.kabinaA.vKabine.forEach(function (o) { vystupy.push(o.cil); });
+  stav.kabinaB.vKabine.forEach(function (o) { vystupy.push(top - o.cil); });
+  stav.cekajici.forEach(function (w) {
+    if (stav.kabinaA.volno > 0) nabrani.push({ x: w.patro, smer: w.smer });
+    if (stav.kabinaB.volno > 0) nabrani.push({ x: top - w.patro, smer: -w.smer });
+  });
+  if (!vystupy.length && !nabrani.length) return null;
+
+  var hranice = stav.stoji ? x : stav.nejblizsiZastaveni;
+  function pred(p, d) { return (p - hranice) * d >= -1e-6; }
+
+  function vyber(d) {
+    // 1) nejbližší zastávka po cestě: výstup, nebo čekající, který chce stejným směrem
+    var best = null;
+    vystupy.forEach(function (p) { if (pred(p, d) && (best === null || (p - best) * d < 0)) best = p; });
+    nabrani.forEach(function (n) { if (n.smer === d && pred(n.x, d) && (best === null || (n.x - best) * d < 0)) best = n.x; });
+    if (best !== null) return best;
+    // 2) nikdo po cestě – dojeď k nejvzdálenějšímu čekajícímu ve směru jízdy a tam se otoč
+    nabrani.forEach(function (n) { if (pred(n.x, d) && (best === null || (n.x - best) * d > 0)) best = n.x; });
+    return best;
+  }
+
+  var d = smerPasazeru(stav);
+  if (d !== 0) smerA = d;
+  var cil = vyber(smerA);
+  if (cil === null && d === 0) { smerA = -smerA; cil = vyber(smerA); }
+  return cil === null ? null : Math.round(cil);
+}
+
+// Nastoupí jen ten, kdo chce jet směrem, kterým jeho kabina pojede.
+// Když jsou obě kabiny prázdné, směr určí ten, kdo nastoupí první.
+function nastup(stav, osoba, kabina) {
+  var d = smerPasazeru(stav);
+  if (d === 0) return true;
+  var smerKabiny = kabina === 'A' ? d : -d;
+  return osoba.smer === smerKabiny;
+}
+</script>
+
+<!-- ===================================================================== -->
+<!--  SIMULACE A ROZHRANÍ  –  tohle neupravuj                              -->
+<!-- ===================================================================== -->
+<script>
+(function () {
+  'use strict';
+
+  /* ------------------------------------------------------------------ *
+   *  FORMÁT ZADÁNÍ (stejný jako vytah.html + nepovinný objekt slide)
+   * ------------------------------------------------------------------ */
+  var FORMAT = 'vytah-zadani', VERSION = 1, ENGINE_VERSION = 1, G = 9.81;
+
+  var DEFAULTS = {
+    lift: { floors: 5, floorHeight: 3, speed: 2, acceleration: 1, capacity: 8, doorOpen: 1.5, doorClose: 1.5, startFloor: 0 },
+    boarding: { in: 1, out: 1 },
+    info: { destVisible: false },
+    evaluation: { horizon: 600, maxTime: 7200 },
+    slide: { angle: 30, friction: 0.1, maxSpeed: 6, enter: 2, exit: 1.5 },
+  };
+
+  var RANGES = [
+    { path: ['lift', 'floors'], label: 'Počet pater', unit: '', min: 2, max: 20, int: true },
+    { path: ['lift', 'floorHeight'], label: 'Výška mezi patry', unit: 'm', min: 2, max: 6 },
+    { path: ['lift', 'startFloor'], label: 'Kabina A začíná v patře', unit: '', min: 0, max: 19, int: true },
+    { path: ['lift', 'speed'], label: 'Největší rychlost výtahu', unit: 'm/s', min: 0.5, max: 6 },
+    { path: ['lift', 'acceleration'], label: 'Zrychlení výtahu', unit: 'm/s²', min: 0.3, max: 3 },
+    { path: ['lift', 'capacity'], label: 'Kapacita jedné kabiny', unit: 'osob', min: 1, max: 20, int: true },
+    { path: ['lift', 'doorOpen'], label: 'Otevření dveří', unit: 's', min: 0.5, max: 5 },
+    { path: ['lift', 'doorClose'], label: 'Zavření dveří', unit: 's', min: 0.5, max: 5 },
+    { path: ['boarding', 'in'], label: 'Nástup jednoho člověka', unit: 's', min: 0.3, max: 4 },
+    { path: ['boarding', 'out'], label: 'Výstup jednoho člověka', unit: 's', min: 0.3, max: 4 },
+    { path: ['evaluation', 'horizon'], label: 'Hodnocený úsek', unit: 's', min: 0, max: Infinity, exclusiveMin: true },
+    { path: ['evaluation', 'maxTime'], label: 'Nejdelší doba simulace', unit: 's', min: 60, max: Infinity },
+    { path: ['slide', 'angle'], label: 'Sklon tobogánu', unit: '°', min: 15, max: 60, desc: 'Délka trubky = výška pádu / sin(sklon).' },
+    { path: ['slide', 'friction'], label: 'Tření na tobogánu', unit: '', min: 0, max: 0.5, desc: 'Zrychlení = g · (sin − tření · cos).' },
+    { path: ['slide', 'maxSpeed'], label: 'Nejvyšší rychlost na tobogánu', unit: 'm/s', min: 1, max: 15, desc: 'Omezení odporem vzduchu.' },
+    { path: ['slide', 'enter'], label: 'Usednutí na tobogán', unit: 's', min: 0.5, max: 10, desc: 'Násobí se hodnotou slow.' },
+    { path: ['slide', 'exit'], label: 'Vylezení z tobogánu', unit: 's', min: 0.3, max: 10, desc: 'Násobí se hodnotou slow.' },
+  ];
+
+  /* otisk zadání – stejný postup jako v generátoru a ve vytah.html */
+  function stable(x) {
+    if (Array.isArray(x)) return '[' + x.map(stable).join(',') + ']';
+    if (x && typeof x === 'object') return '{' + Object.keys(x).sort().map(function (k) { return JSON.stringify(k) + ':' + stable(x[k]); }).join(',') + '}';
+    return JSON.stringify(x);
+  }
+  function cyrb53(str) {
+    var h1 = 0xdeadbeef, h2 = 0x41c6ce57, ch;
+    for (var i = 0; i < str.length; i++) {
+      ch = str.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507); h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507); h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return 4294967296 * (2097151 & h2) + (h1 >>> 0);
+  }
+  function hashOf(s) {
+    var c = {
+      lift: s.lift, boarding: s.boarding, info: s.info, evaluation: s.evaluation, engineVersion: ENGINE_VERSION,
+      people: s.people.map(function (p) { return { id: p.id, t: p.t, from: p.from, to: p.to, slow: p.slow || 1 }; }),
+    };
+    if (s.hasSlide) c.slide = s.slide;
+    var h = cyrb53(stable(c)).toString(16).toUpperCase().padStart(14, '0').slice(-8);
+    return h.slice(0, 4) + '-' + h.slice(4);
+  }
+
+  function isNum(x) { return typeof x === 'number' && isFinite(x); }
+  function getPath(o, path) { return path.reduce(function (a, k) { return a[k]; }, o); }
+  function slideAcc(sl) { var th = sl.angle * Math.PI / 180; return G * (Math.sin(th) - sl.friction * Math.cos(th)); }
+
+  function validate(raw) {
+    var errors = [], warnings = [];
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { ok: false, errors: ['Soubor neobsahuje objekt JSON.'], warnings: warnings };
+    if (raw.format !== FORMAT) errors.push('Soubor není zadání výtahu (chybí „format“: „' + FORMAT + '“).');
+    if (raw.version !== VERSION) errors.push('Nepodporovaná verze formátu: ' + raw.version + ' (umím ' + VERSION + ').');
+    if (errors.length) return { ok: false, errors: errors, warnings: warnings };
+
+    var s = {
+      engineVersion: raw.engineVersion || ENGINE_VERSION,
+      name: String(raw.name || 'Zadání bez názvu'), description: String(raw.description || ''),
+      lift: Object.assign({}, DEFAULTS.lift, raw.lift), boarding: Object.assign({}, DEFAULTS.boarding, raw.boarding),
+      info: Object.assign({}, DEFAULTS.info, raw.info), evaluation: Object.assign({}, DEFAULTS.evaluation, raw.evaluation),
+      slide: Object.assign({}, DEFAULTS.slide, raw.slide), hasSlide: !!raw.slide,
+      hash: raw.hash || null,
+    };
+    s.info.destVisible = !!s.info.destVisible;
+
+    RANGES.forEach(function (r) {
+      var v = getPath(s, r.path);
+      var bad = !isNum(v) || v < r.min || v > r.max || (r.exclusiveMin && v <= r.min);
+      if (bad) errors.push(r.label + ' (' + r.path.join('.') + '): hodnota ' + v + ' je mimo povolený rozsah.');
+    });
+    if (!Number.isInteger(s.lift.floors) || !Number.isInteger(s.lift.capacity) || !Number.isInteger(s.lift.startFloor)) errors.push('Počet pater, kapacita a počáteční patro musí být celá čísla.');
+    if (s.lift.startFloor >= s.lift.floors) errors.push('Počáteční patro ' + s.lift.startFloor + ' neexistuje (pater je ' + s.lift.floors + ').');
+    if (!errors.length && slideAcc(s.slide) < 0.3) errors.push('Tobogán je příliš plochý nebo drsný, nikdo by po něm nesjel (zvětši sklon nebo zmenši tření).');
+
+    if (!Array.isArray(raw.people) || raw.people.length === 0) errors.push('Zadání neobsahuje žádné lidi („people“).');
+    else if (raw.people.length > 5000) errors.push('Lidí je příliš mnoho (nejvýše 5000).');
+    else {
+      s.people = [];
+      raw.people.forEach(function (p, i) {
+        var n = i + 1, F = s.lift.floors;
+        if (!p || !isNum(p.t) || p.t < 0) { errors.push('Osoba č. ' + n + ': neplatný čas příchodu „t“.'); return; }
+        if (!Number.isInteger(p.from) || p.from < 0 || p.from >= F) { errors.push('Osoba č. ' + n + ': patro „from“ (' + p.from + ') neexistuje, pater je ' + F + ' (0 až ' + (F - 1) + ').'); return; }
+        if (!Number.isInteger(p.to) || p.to < 0 || p.to >= F) { errors.push('Osoba č. ' + n + ': patro „to“ (' + p.to + ') neexistuje, pater je ' + F + ' (0 až ' + (F - 1) + ').'); return; }
+        if (p.from === p.to) { errors.push('Osoba č. ' + n + ': jede z patra ' + p.from + ' do téhož patra.'); return; }
+        if (p.slow !== undefined && !(isNum(p.slow) && p.slow >= 0.25 && p.slow <= 10)) { errors.push('Osoba č. ' + n + ': „slow“ musí být číslo 0,25 až 10.'); return; }
+        var o = { id: n, t: p.t, from: p.from, to: p.to };
+        if (p.slow !== undefined && p.slow !== 1) o.slow = p.slow;
+        s.people.push(o);
+      });
+      if (!errors.length) {
+        s.people.sort(function (a, b) { return a.t - b.t || a.id - b.id; });
+        s.people.forEach(function (p, i) { p.id = i + 1; });
+      }
+    }
+    if (errors.length) return { ok: false, errors: errors.slice(0, 12).concat(errors.length > 12 ? ['… a dalších ' + (errors.length - 12) + ' chyb.'] : []), warnings: warnings };
+
+    s.computedHash = hashOf(s);
+    if (s.hash && s.hash !== s.computedHash) warnings.push('Otisk zadání v souboru (' + s.hash + ') nesouhlasí s obsahem (' + s.computedHash + '). Soubor byl po vytvoření upraven.');
+    if (s.engineVersion !== ENGINE_VERSION) warnings.push('Zadání bylo vytvořeno pro jinou verzi jádra (' + s.engineVersion + ', tento simulátor má ' + ENGINE_VERSION + '). Výsledky se mohou lišit.');
+    return { ok: true, errors: errors, warnings: warnings, scenario: s };
+  }
+
+  /* ------------------------------------------------------------------ *
+   *  UKÁZKOVÉ ZADÁNÍ
+   * ------------------------------------------------------------------ */
+  function makeDemo() {
+    var seed = 20261019;
+    function rnd() { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; }
+    var F = 8, people = [], t = 0;
+    for (var i = 0; i < 80; i++) {
+      t += -Math.log(1 - rnd()) * 8;
+      var r = rnd(), from, to;
+      if (r < 0.4) { from = 0; to = 1 + Math.floor(rnd() * (F - 1)); }
+      else if (r < 0.85) { to = 0; from = 1 + Math.floor(rnd() * (F - 1)); }
+      else { from = 1 + Math.floor(rnd() * (F - 1)); do { to = 1 + Math.floor(rnd() * (F - 1)); } while (to === from); }
+      var p = { id: i + 1, t: Math.round(t * 10) / 10, from: from, to: to };
+      if (rnd() < 0.1) p.slow = 2;
+      people.push(p);
+    }
+    var raw = {
+      format: FORMAT, version: VERSION, engineVersion: ENGINE_VERSION,
+      name: 'Ukázka: tobogány v akci', description: 'Osm pater, 80 lidí, skoro polovina jede dolů do přízemí.',
+      lift: { floors: F, capacity: 6, speed: 2, acceleration: 1 },
+      boarding: { in: 1, out: 1 }, info: { destVisible: false }, evaluation: { horizon: 600, maxTime: 7200 },
+      people: people,
+    };
+    raw.hash = validate(raw).scenario.computedHash;
+    return raw;
+  }
+
+  /* ------------------------------------------------------------------ *
+   *  JÁDRO SIMULACE
+   * ------------------------------------------------------------------ */
+  var DT = 0.05, REC = 2, BRAKE_TOL = 0.1, WALL_LIMIT_MS = 20000, SWITCH_GAIN = 3;
+
+  function sgn(x) { return x > 0 ? 1 : x < 0 ? -1 : 0; }
+  function clamp(x, lo, hi) { return Math.max(lo, Math.min(hi, x)); }
+
+  /* jízda po tobogánu: rozjezd se stálým zrychlením, pak stálá rychlost (odpor vzduchu) */
+  function slidePhysics(scn) {
+    var sl = scn.slide, a = slideAcc(sl), vm = sl.maxSpeed, th = sl.angle * Math.PI / 180;
+    var ta = vm / a, da = 0.5 * a * ta * ta, F = scn.lift.floors, len = [0], ride = [0];
+    for (var f = 1; f < F; f++) {
+      var Ls = f * scn.lift.floorHeight / Math.sin(th);
+      len.push(Ls);
+      ride.push(Ls <= da ? Math.sqrt(2 * Ls / a) : ta + (Ls - da) / vm);
+    }
+    return { a: a, vmax: vm, ta: ta, da: da, len: len, ride: ride };
+  }
+  function slideDist(sp, tau) { return tau < sp.ta ? 0.5 * sp.a * tau * tau : sp.da + sp.vmax * (tau - sp.ta); }
+
+  function studentError(phase, e, custom) {
+    var err = new Error(e && e.message ? e.message : String(e));
+    err.student = true; err.phase = phase; err.errName = e && e.name; err.line = null;
+    if (!custom && e && e.stack) {
+      var m = /:(\d+):\d+/.exec(String(e.stack).split('\n').filter(function (l) { return /:\d+:\d+/.test(l); })[0] || '');
+      if (m) err.line = +m[1];
+    }
+    return err;
+  }
+
+  function run(scn, slides) {
+    var logs = [], clock = { t: 0 };
+    var saved = { log: console.log, warn: console.warn, error: console.error, info: console.info };
+    function add(args) {
+      if (logs.length >= 300) { if (logs.length === 300) logs.push('… (další výpisy už se nezobrazují)'); return; }
+      logs.push('[' + clock.t.toFixed(1) + ' s] ' + Array.prototype.map.call(args, function (a) {
+        if (typeof a === 'string') return a;
+        try { return JSON.stringify(a); } catch (e) { return String(a); }
+      }).join(' '));
+    }
+    console.log = console.warn = console.error = console.info = function () { add(arguments); };
+    try { return runInner(scn, logs, clock, slides !== false); }
+    finally { console.log = saved.log; console.warn = saved.warn; console.error = saved.error; console.info = saved.info; }
+  }
+
+  // SLIDES = false: varianta bez tobogánů, všichni jezdí výtahem
+  function runInner(scn, logs, clock, SLIDES) {
+    var L = scn.lift, B = scn.boarding, SL = scn.slide, F = L.floors, TOP = F - 1, H = L.floorHeight, CAP = L.capacity;
+    var VMAX = L.speed, ACC = L.acceleration, destVisible = !!scn.info.destVisible;
+    var maxTime = scn.evaluation.maxTime, horizon = scn.evaluation.horizon;
+    var SP = slidePhysics(scn);
+
+    if (typeof rozhodni !== 'function') {
+      return { ok: false, error: { phase: 'syntax', message: 'V bloku algoritmus chybí funkce rozhodni(stav).', line: null, time: 0 }, log: logs };
+    }
+    var fnNastup = typeof nastup === 'function' ? nastup : null;
+
+    var P = scn.people.map(function (p) {
+      return {
+        id: p.id, t: p.t, from: p.from, to: p.to, slow: p.slow || 1, dir: sgn(p.to - p.from),
+        mode: null, car: null, switched: false, tQ: null, tSit: null, tGo: null, tBottom: null,
+        tBoard: null, tExit: null, vw: null, vc: null,
+      };
+    });
+    var N = P.length, nextArr = 0, delivered = 0, switches = 0;
+    var waiting = [], onboard = { A: [], B: [] };
+    var slideQ = [], slideOcc = [];
+    for (var f0 = 0; f0 < F; f0++) { slideQ.push([]); slideOcc.push(null); }
+    var y = L.startFloor * H, v = 0, state = 'idle', target = null, stop = null;
+    var dirLast = 1, stops = 0, dist = 0;
+    var fy = [y], fdoorA = [0], fdoorB = [0];
+    var tick = 0;
+
+    function carFloor(c) { var fa = clamp(Math.round(y / H), 0, TOP); return c === 'A' ? fa : TOP - fa; }
+    function doorFrac(c) {
+      if (!stop || !stop.cars[c].open) return 0;
+      if (stop.phase === 'open') return clamp(1 - stop.timer / L.doorOpen, 0, 1);
+      if (stop.phase === 'close') return clamp(stop.timer / L.doorClose, 0, 1);
+      return 1;
+    }
+    function nearestAhead() {
+      var d = sgn(v) || sgn(target * H - y) || 1;
+      var brake = Math.max(0, v * v / (2 * ACC) - BRAKE_TOL);
+      var f = d > 0 ? Math.ceil((y + brake) / H - 1e-6) : Math.floor((y - brake) / H + 1e-6);
+      return clamp(f, 0, TOP);
+    }
+    function mirror(f) { return TOP - f; }
+    function cabin(c) {
+      return Object.freeze({
+        patro: carFloor(c),
+        vKabine: Object.freeze(onboard[c].map(function (p) { return p.vc; })),
+        volno: CAP - onboard[c].length,
+      });
+    }
+    function makeStav() {
+      var moving = state === 'moving', patro = carFloor('A');
+      return Object.freeze({
+        cas: tick * DT, patro: patro, poloha: y, rychlost: v,
+        smer: moving ? (sgn(v) || sgn(target * H - y)) : 0,
+        posledniSmer: dirLast, stoji: !moving, cil: moving ? target : null,
+        nejblizsiZastaveni: moving ? nearestAhead() : patro,
+        kapacita: CAP, pocetPater: F, vyskaPatra: H,
+        kabinaA: cabin('A'), kabinaB: cabin('B'),
+        cekajici: Object.freeze(waiting.map(function (p) { return p.vw; })),
+        zrcadlo: mirror,
+      });
+    }
+    function decide() {
+      var r;
+      try { r = rozhodni(makeStav()); } catch (e) { throw studentError('rozhodni', e); }
+      if (r === null || r === undefined) return null;
+      if (typeof r !== 'number' || !Number.isInteger(r) || r < 0 || r >= F) {
+        throw studentError('rozhodni', new Error('Funkce rozhodni() vrátila ' + (typeof r === 'object' ? 'objekt' : String(r)) + ', ale musí vrátit celé číslo patra od 0 do ' + TOP + ' (nebo null).'), true);
+      }
+      return r;
+    }
+    function anythingAt(fa) {
+      var fb = TOP - fa, i;
+      for (i = 0; i < onboard.A.length; i++) if (onboard.A[i].to === fa) return true;
+      for (i = 0; i < onboard.B.length; i++) if (onboard.B[i].to === fb) return true;
+      for (i = 0; i < waiting.length; i++) if (waiting[i].from === fa || waiting[i].from === fb) return true;
+      return false;
+    }
+
+    /* --- odhady času pro rozhodování lidí (lidé neznají budoucnost, jen vidí stav budovy) --- */
+    function travelT(d) {
+      if (d <= 1e-6) return 0;
+      var da = VMAX * VMAX / ACC;
+      return d < da ? 2 * Math.sqrt(d / ACC) : 2 * VMAX / ACC + (d - da) / VMAX;
+    }
+    function slideEst(p) {
+      var f = p.from, now = tick * DT, t = 0, o = slideOcc[f], q = slideQ[f], i;
+      if (o) t += o.phase === 'enter' ? (o.until - now) + SP.ride[f] : (o.until - now);
+      for (i = 0; i < q.length && q[i] !== p; i++) t += SL.enter * q[i].slow + SP.ride[f];
+      return t + SL.enter * p.slow + SP.ride[f] + SL.exit * p.slow;
+    }
+    function liftEst(p) {
+      var f = p.from, ahead = 0, busy = {}, nb = 0, i;
+      for (i = 0; i < waiting.length && waiting[i] !== p; i++) if (waiting[i].from === f) ahead++;
+      for (i = 0; i < waiting.length; i++) if (waiting[i].from !== f) busy[waiting[i].from] = 1;
+      onboard.A.forEach(function (q) { busy[q.to] = 1; });
+      onboard.B.forEach(function (q) { busy[q.to] = 1; });
+      for (var k in busy) if (+k !== f) nb++;
+      var d = Math.min(Math.abs(y - f * H), Math.abs((TOP * H - y) - f * H));
+      var dwell = L.doorOpen + L.doorClose + 1.5;
+      var cycle = travelT(TOP * H) + 2 * dwell;          // jednou tam a zpět pro další várku
+      return travelT(d) + 0.5 * nb * dwell + Math.floor(ahead / CAP) * cycle +
+        L.doorOpen + ((ahead % CAP) + 1) * B.in * p.slow + L.doorClose +
+        travelT(f * H) + L.doorOpen + B.out * p.slow;
+    }
+
+    /* --- výtah: zastávka obou kabin najednou --- */
+    // Dveře se otevřou jen u kabiny, kde někdo vystupuje, nebo kde čeká někdo, kdo smí nastoupit.
+    function needsOpen(c) {
+      var f = carFloor(c), list = onboard[c], i, stav = null;
+      for (i = 0; i < list.length; i++) if (list[i].to === f) return true;
+      if (list.length >= CAP) return false;
+      for (i = 0; i < waiting.length; i++) {
+        if (waiting[i].from !== f) continue;
+        if (!fnNastup) return true;
+        if (!stav) stav = makeStav();
+        try { if (fnNastup(stav, waiting[i].vw, c)) return true; } catch (e) { throw studentError('nastup', e); }
+      }
+      return false;
+    }
+    function beginStop() {
+      v = 0;
+      var oa = needsOpen('A'), ob = needsOpen('B');
+      if (!oa && !ob) { state = 'idle'; return; }
+      state = 'stop'; stops++;
+      stop = { phase: 'open', timer: L.doorOpen, cars: { A: { open: oa, task: null, timer: 0, p: null }, B: { open: ob, task: null, timer: 0, p: null } } };
+    }
+    function nextTask(c) {
+      var k = stop.cars[c], f = carFloor(c), list = onboard[c], i, now = tick * DT;
+      k.task = null; k.p = null;
+      if (!k.open) return;
+      for (i = 0; i < list.length; i++) if (list[i].to === f) { k.task = 'out'; k.p = list[i]; k.timer = B.out * list[i].slow; return; }
+      if (list.length >= CAP) return;
+      var stav = null;
+      for (i = 0; i < waiting.length; i++) {
+        var p = waiting[i];
+        if (p.from !== f) continue;
+        var ok = true;
+        if (fnNastup) {
+          if (!stav) stav = makeStav();
+          try { ok = fnNastup(stav, p.vw, c); } catch (e) { throw studentError('nastup', e); }
+        }
+        if (ok) {
+          waiting.splice(i, 1); list.push(p); p.car = c;
+          p.vc = Object.freeze({ id: p.id, odkud: p.from, cil: p.to, od: p.t, nastoupil: now });
+          k.task = 'in'; k.p = p; k.timer = B.in * p.slow; return;
+        }
+      }
+    }
+    function doStop() {
+      var now = tick * DT;
+      stop.timer -= DT;
+      if (stop.phase === 'open') {
+        if (stop.timer > 1e-9) return;
+        stop.phase = 'work'; nextTask('A'); nextTask('B');
+      } else if (stop.phase === 'work') {
+        ['A', 'B'].forEach(function (c) {
+          var k = stop.cars[c];
+          if (!k.task) { nextTask(c); return; }
+          k.timer -= DT;
+          if (k.timer > 1e-9) return;
+          if (k.task === 'out') { onboard[c].splice(onboard[c].indexOf(k.p), 1); k.p.tExit = now; delivered++; }
+          else k.p.tBoard = now;
+          nextTask(c);
+        });
+        if (!stop.cars.A.task && !stop.cars.B.task) { stop.phase = 'close'; stop.timer = L.doorClose; }
+      } else if (stop.timer <= 1e-9) {
+        state = 'idle'; stop = null;
+      }
+    }
+    function move() {
+      var ty = target * H, d = ty - y, ad = Math.abs(d), s = d >= 0 ? 1 : -1;
+      var vd = Math.min(VMAX, Math.sqrt(2 * ACC * ad)) * s;
+      v += clamp(vd - v, -ACC * DT, ACC * DT);
+      if (v !== 0) dirLast = sgn(v);
+      var yn = y + v * DT;
+      if ((ty - yn) * s <= 1e-4 || (ad < 0.03 && Math.abs(v) < 0.3)) {
+        dist += ad; y = ty; v = 0; target = null; beginStop();
+      } else { dist += Math.abs(v * DT); y = yn; }
+    }
+
+    /* --- tobogány: na každém nejvýš jeden člověk --- */
+    function stepSlides(now) {
+      for (var f = 1; f < F; f++) {
+        var o = slideOcc[f];
+        if (o && now >= o.until - 1e-9) {
+          if (o.phase === 'enter') { o.phase = 'ride'; o.p.tGo = o.until; o.until += SP.ride[f]; }
+          else if (o.phase === 'ride') { o.p.tBottom = o.until; o.p.tExit = o.until + SL.exit * o.p.slow; slideOcc[f] = o = null; }
+        }
+        if (!o && slideQ[f].length) {
+          var p = slideQ[f].shift();
+          p.tSit = now;
+          slideOcc[f] = { p: p, phase: 'enter', until: now + SL.enter * p.slow };
+        }
+      }
+    }
+    var exitsPending = [];   // lidé, kteří lezou z tobogánu ven (doručení se počítá až po vylezení)
+    function toSlide(p, now) { p.mode = 'slide'; p.tQ = now; slideQ[p.from].push(p); }
+
+    function step() {
+      tick++;
+      var now = tick * DT, i;
+      clock.t = now;
+      while (nextArr < N && P[nextArr].t <= now + 1e-9) {
+        var p = P[nextArr++];
+        var vw = { id: p.id, patro: p.from, smer: p.dir, od: p.t };
+        if (destVisible) vw.cil = p.to;
+        p.vw = Object.freeze(vw);
+        if (SLIDES && p.to === 0 && p.from > 0) {
+          p.mode = 'lift'; waiting.push(p);
+          if (slideEst(p) <= liftEst(p)) { waiting.pop(); toSlide(p, now); }
+        } else { p.mode = 'lift'; waiting.push(p); }
+      }
+      if (SLIDES && tick % 20 === 0) {
+        for (i = waiting.length - 1; i >= 0; i--) {
+          var w = waiting[i];
+          if (w.to !== 0 || w.from === 0) continue;
+          if (slideEst(w) + SWITCH_GAIN < liftEst(w)) { waiting.splice(i, 1); w.switched = true; switches++; toSlide(w, now); }
+        }
+      }
+      var before = slideOcc.map(function (o) { return o && o.p; });
+      stepSlides(now);
+      before.forEach(function (q) { if (q && q.tBottom !== null && exitsPending.indexOf(q) < 0) exitsPending.push(q); });
+      for (i = exitsPending.length - 1; i >= 0; i--) if (exitsPending[i].tExit <= now + 1e-9) { exitsPending.splice(i, 1); delivered++; }
+
+      if (state === 'idle') {
+        var w1 = decide();
+        if (w1 !== null) {
+          var fa = carFloor('A');
+          if (w1 === fa) { if (anythingAt(fa)) beginStop(); }
+          else { target = w1; state = 'moving'; }
+        }
+      } else if (state === 'moving') {
+        var w2 = decide();
+        if (w2 !== null) {
+          var d = sgn(v) || sgn(target * H - y) || 1, near = nearestAhead();
+          target = (w2 - near) * d >= 0 ? w2 : near;
+        }
+      }
+      if (state === 'moving') move();
+      else if (state === 'stop') doStop();
+      if (tick % REC === 0) { fy.push(y); fdoorA.push(doorFrac('A')); fdoorB.push(doorFrac('B')); }
+    }
+
+    var wallStart = Date.now();
+    try {
+      if (typeof zacatek === 'function') { try { zacatek(makeStav()); } catch (e) { throw studentError('zacatek', e); } }
+      while (delivered < N && tick * DT < maxTime) {
+        step();
+        if ((tick & 1023) === 0 && Date.now() - wallStart > WALL_LIMIT_MS) {
+          throw Object.assign(new Error('Simulace trvá příliš dlouho (více než ' + WALL_LIMIT_MS / 1000 + ' s počítání). Je tvůj algoritmus příliš pomalý?'), { student: true, phase: 'timeout', line: null });
+        }
+      }
+    } catch (e) {
+      if (e.student) return { ok: false, error: { phase: e.phase, message: e.message, line: e.line, time: tick * DT }, log: logs };
+      throw e;
+    }
+    if (tick % REC !== 0) { fy.push(y); fdoorA.push(doorFrac('A')); fdoorB.push(doorFrac('B')); }
+    var endTime = tick * DT;
+    // kdo nedojel, nemá čas výstupu (i kdyby ho měl naplánovaný po konci simulace)
+    P.forEach(function (q) { if (q.tExit !== null && q.tExit > endTime + 1e-9) q.tExit = null; });
+
+    var sw = 0, sr = 0, st = 0, nb = 0, mw = 0, mt = 0, tAll = 0, inH = 0, nd = 0, i;
+    var down = { slide: 0, lift: 0, slideT: 0, liftT: 0 }, byCar = { A: 0, B: 0 };
+    for (i = 0; i < N; i++) {
+      var q = P[i], start = q.mode === 'slide' ? q.tSit : q.tBoard;
+      if (start !== null) { var wt = start - q.t; nb++; sw += wt; if (wt > mw) mw = wt; }
+      if (q.tExit !== null) {
+        var tot = q.tExit - q.t; nd++; st += tot; sr += q.tExit - start;
+        if (tot > mt) mt = tot; if (q.tExit > tAll) tAll = q.tExit; if (q.tExit <= horizon) inH++;
+        if (q.to === 0 && q.from > 0) {
+          if (q.mode === 'slide') { down.slide++; down.slideT += tot; } else { down.lift++; down.liftT += tot; }
+        }
+        if (q.car) byCar[q.car]++;
+      }
+    }
+    var finished = nd === N;
+    return {
+      ok: true, finished: finished, endTime: endTime,
+      metrics: {
+        total: N, delivered: nd, finished: finished, tAll: finished ? tAll : null,
+        avgTotal: nd ? st / nd : null, avgWait: nb ? sw / nb : null, avgRide: nd ? sr / nd : null,
+        maxWait: mw, maxTotal: mt, stops: stops, dist: dist, servedInHorizon: inH,
+        down: down, switches: switches, byCar: byCar,
+      },
+      persons: P.map(function (q) {
+        return { id: q.id, t: q.t, from: q.from, to: q.to, slow: q.slow, mode: q.mode, car: q.car, switched: q.switched,
+          tQ: q.tQ, tSit: q.tSit, tGo: q.tGo, tBottom: q.tBottom, tBoard: q.tBoard, tExit: q.tExit };
+      }),
+      frames: { dt: DT * REC, y: fy, doorA: fdoorA, doorB: fdoorB },
+      slide: SP, slides: SLIDES,
+      log: logs,
+    };
+  }
+
+  /* ------------------------------------------------------------------ *
+   *  VYKRESLENÍ
+   * ------------------------------------------------------------------ */
+  var PAL = ['#475569', '#2b6cb0', '#2f9e44', '#c27c0e', '#c53030', '#7c3aed', '#0d9488', '#be185d', '#65a30d', '#ea580c'];
+  var INK = '#2d3748', MUTE = '#718096', ACCENT = '#2b6cb0', ACCENT_B = '#0d9488';
+  var CW = 680;
+
+  function rrect(ctx, x, y, w, h, r) {
+    ctx.beginPath(); ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+  function tri(ctx, x, y, up, s, col) {
+    ctx.fillStyle = col; ctx.beginPath();
+    if (up) { ctx.moveTo(x, y - s); ctx.lineTo(x + s, y + s * 0.7); ctx.lineTo(x - s, y + s * 0.7); }
+    else { ctx.moveTo(x, y + s); ctx.lineTo(x + s, y - s * 0.7); ctx.lineTo(x - s, y - s * 0.7); }
+    ctx.closePath(); ctx.fill();
+  }
+  function person(ctx, x, yBase, dest, s, waited, slow) {
+    ctx.fillStyle = PAL[dest % PAL.length];
+    rrect(ctx, x - 4 * s, yBase - 12 * s, 8 * s, 12 * s, 2 * s); ctx.fill();
+    var k = Math.min(1, (waited || 0) / 120);
+    ctx.fillStyle = 'rgb(' + Math.round(242 - 20 * k) + ',' + Math.round(201 - 140 * k) + ',' + Math.round(160 - 110 * k) + ')';
+    ctx.beginPath(); ctx.arc(x, yBase - 15.5 * s, 3.6 * s, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = INK; ctx.font = 'bold ' + Math.round(9 * Math.max(s, 0.85)) + 'px system-ui, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(dest, x, yBase - 21 * s);
+    if (slow && slow > 1) { ctx.strokeStyle = INK; ctx.lineWidth = 1; ctx.strokeRect(x - 5 * s, yBase - 12 * s - 1, 10 * s, 2); }
+  }
+  function frameAt(res, t) {
+    var fr = res.frames, n = fr.y.length, i = Math.max(0, t / fr.dt);
+    var i0 = Math.min(n - 1, Math.floor(i)), i1 = Math.min(n - 1, i0 + 1), k = Math.min(1, i - i0);
+    return { y: fr.y[i0] + (fr.y[i1] - fr.y[i0]) * k, doorA: fr.doorA[i0] + (fr.doorA[i1] - fr.doorA[i0]) * k, doorB: fr.doorB[i0] + (fr.doorB[i1] - fr.doorB[i0]) * k, moving: Math.abs(fr.y[i1] - fr.y[i0]) > 1e-6, up: fr.y[i1] > fr.y[i0] };
+  }
+  function dimOn(ctx) { ctx.save(); ctx.globalAlpha = 0.35; if ('filter' in ctx) ctx.filter = 'grayscale(1)'; }
+  function dimOff(ctx) { ctx.restore(); }
+
+  function drawScene(c, scn, res, t, view) {
+    var L = scn.lift, F = L.floors, TOP = F - 1, HF = L.floorHeight, SP = res.slide;
+    var fp = Math.max(36, Math.min(76, Math.round(470 / F))), TM = 112, HH = TM + F * fp + 28;
+    var dpr = window.devicePixelRatio || 1, cssW = c.clientWidth || CW;
+    var pw = Math.round(cssW * dpr), ph = Math.round(cssW * HH / CW * dpr);
+    if (c.width !== pw || c.height !== ph) { c.width = pw; c.height = ph; }
+    c.style.aspectRatio = CW + ' / ' + HH;
+    var ctx = c.getContext('2d');
+    ctx.setTransform(pw / CW, 0, 0, ph / HH, 0, 0);
+    ctx.clearRect(0, 0, CW, HH);
+
+    var hasSlides = res.slides, showLift = view !== 'slide' || !hasSlides, showSlide = hasSlides && view !== 'lift';
+    var g0 = HH - 28, fy = function (f) { return g0 - f * fp; };
+    var AX = 290, BX = 385, SW = 80, ACX = AX + SW / 2, BCX = BX + SW / 2;
+    var shaftTop = fy(TOP) - fp + 4;
+    var ENX = 486, QX = 526;
+    var exitX = function (f) { return 266 - (f - 1) * Math.min(38, 228 / Math.max(1, TOP)); };
+    var exitY = g0 - 12, entY = function (f) { return fy(f) - 15; }, HOLE = 10;
+    var tubes = tubePaths(F, ENX, entY, exitX, exitY);
+    var s = Math.min(1, (fp - 14) / 24);
+    var fr = frameAt(res, t), yA = fr.y, yB = TOP * HF - yA;
+
+    /* kdo je kde v čase t */
+    var liftQ = [], slideQ = [], sitting = [], riders = [], outs = [], inA = [], inB = [], f, i;
+    for (f = 0; f < F; f++) { liftQ.push([]); slideQ.push([]); sitting.push(null); }
+    for (i = 0; i < res.persons.length; i++) {
+      var p = res.persons[i];
+      if (p.t > t) break;
+      if (p.tExit !== null && t >= p.tExit) continue;
+      if (p.mode === 'slide' && t >= p.tQ) {
+        if (p.tSit === null || t < p.tSit) slideQ[p.from].push(p);
+        else if (p.tGo === null || t < p.tGo) sitting[p.from] = p;
+        else if (p.tBottom === null || t < p.tBottom) riders.push(p);
+        else outs.push(p);
+      } else if (p.tBoard === null || t < p.tBoard) liftQ[p.from].push(p);
+      else (p.car === 'A' ? inA : inB).push(p);
+    }
+
+    /* patra */
+    for (f = 0; f < F; f++) {
+      ctx.fillStyle = f % 2 ? '#f1f5f9' : '#f8fafc';
+      ctx.fillRect(0, fy(f) - fp, CW, fp);
+      ctx.fillStyle = '#718096'; ctx.fillRect(0, fy(f), CW, 3);
+      ctx.fillStyle = INK; ctx.textAlign = 'right'; ctx.font = 'bold 12px system-ui, sans-serif';
+      ctx.fillText(f === 0 ? 'přízemí' : f + '. patro', CW - 8, fy(f) - fp + 15);
+    }
+
+    /* tobogány (za šachtami) – ve variantě bez tobogánů se nekreslí vůbec */
+    if (hasSlides && !showSlide) dimOn(ctx);
+    for (f = hasSlides ? TOP : 0; f >= 1; f--) {
+      var tb = tubes[f], y0 = entY(f), x1 = exitX(f), y1 = exitY;
+      // uzavřená trubka v prostoru: vzadu (za budovou) užší a tmavší, vpředu širší a světlejší
+      drawTube(ctx, tb, 2 * HOLE - 2);
+      // kruhové otvory: vstup v patře, výstup těsně nad zemí v přízemí (oba míří k divákovi)
+      hole(ctx, ENX, y0, HOLE);
+      hole(ctx, x1, y1, HOLE);
+      ctx.fillStyle = INK; ctx.font = 'bold 9px system-ui, sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(f, x1, y1 - HOLE - 3);
+      // jezdci v této trubce (kreslí se hned po ní, aby je bližší trubky a šachty mohly zakrýt)
+      if (showSlide) riders.forEach(function (q) {
+        if (q.from !== f) return;
+        var k = clamp(slideDistAt(SP, t - q.tGo) / SP.len[f], 0, 1), pt = tubePoint(tb, k);
+        person(ctx, pt.x, pt.y + 7 * (1 - 0.5 * pt.z), 0, s * 0.72 * (1 - 0.5 * pt.z), 0, q.slow);
+      });
+      // semafor u vstupu
+      var busy = false;
+      for (i = 0; i < res.persons.length; i++) {
+        var q = res.persons[i];
+        if (q.t > t) break;
+        if (q.from === f && q.tSit !== null && t >= q.tSit && (q.tBottom === null || t < q.tBottom)) { busy = true; break; }
+      }
+      var lx = ENX + 26, ly = fy(f) - 27;
+      ctx.fillStyle = '#1f2937'; rrect(ctx, lx - 6, ly - 1, 12, 23, 3); ctx.fill();
+      ctx.fillStyle = busy ? '#ef4444' : '#4b5563'; ctx.beginPath(); ctx.arc(lx, ly + 5, 4, 0, 2 * Math.PI); ctx.fill();
+      ctx.fillStyle = busy ? '#4b5563' : '#22c55e'; ctx.beginPath(); ctx.arc(lx, ly + 16, 4, 0, 2 * Math.PI); ctx.fill();
+    }
+    if (hasSlides && !showSlide) dimOff(ctx);
+
+    /* šachty, motor, lano, kabiny */
+    if (!showLift) dimOn(ctx);
+    ctx.fillStyle = 'rgba(226,232,240,.88)';
+    ctx.fillRect(AX, shaftTop, SW, g0 - shaftTop); ctx.fillRect(BX, shaftTop, SW, g0 - shaftTop);
+    ctx.strokeStyle = '#4a5568'; ctx.lineWidth = 3;
+    ctx.strokeRect(AX, shaftTop, SW, g0 - shaftTop); ctx.strokeRect(BX, shaftTop, SW, g0 - shaftTop);
+    var R = (BCX - ACX) / 2, PCX = (ACX + BCX) / 2, PCY = shaftTop - 42;
+    var cyBotA = g0 - yA / HF * fp - 2, cyBotB = g0 - yB / HF * fp - 2, ch = fp - 12;
+    ctx.strokeStyle = '#111827'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(ACX, cyBotA - ch); ctx.lineTo(ACX, PCY); ctx.arc(PCX, PCY, R, Math.PI, 2 * Math.PI); ctx.lineTo(BCX, cyBotB - ch); ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.strokeStyle = '#111827'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(PCX, PCY, R - 6, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+    ctx.save(); ctx.translate(PCX, PCY); ctx.rotate(yA / HF * 0.9);
+    ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1.5;
+    for (i = 0; i < 3; i++) { ctx.rotate(Math.PI / 3); ctx.beginPath(); ctx.moveTo(-(R - 10), 0); ctx.lineTo(R - 10, 0); ctx.stroke(); }
+    ctx.restore();
+    ctx.fillStyle = '#fff'; ctx.fillRect(PCX - 22, PCY - 8, 44, 16);
+    ctx.fillStyle = INK; ctx.font = 'bold 12px system-ui, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('motor', PCX, PCY + 4);
+
+    function drawCar(x, cyBot, list, col, name, door) {
+      var cw = SW - 10, cx = x + 5, cy = cyBot - ch, n = list.length;
+      ctx.fillStyle = '#f7fafc'; ctx.fillRect(cx, cy, cw, ch);
+      ctx.fillStyle = col; ctx.fillRect(cx, cy, cw, 14);
+      if (showLift) {
+        var perRow = Math.max(1, Math.ceil(L.capacity / 2)), sc = Math.min(1, (ch - 22) / 26);
+        for (var j = 0; j < n; j++) {
+          var row = j < perRow ? 0 : 1, col2 = row ? j - perRow : j;
+          person(ctx, cx + 10 + col2 * ((cw - 20) / Math.max(1, perRow - 1)), cyBot - 3, list[j].to, sc * (row ? 0.82 : 1), 0, list[j].slow);
+        }
+      }
+      var dw = (cw - 6) / 2 * (1 - door);
+      ctx.fillStyle = 'rgba(160,174,192,.45)'; ctx.strokeStyle = '#718096'; ctx.lineWidth = 1.5;
+      if (dw > 0.5) {
+        ctx.fillRect(cx + 3, cy + 16, dw, ch - 18); ctx.strokeRect(cx + 3, cy + 16, dw, ch - 18);
+        ctx.fillRect(cx + cw - 3 - dw, cy + 16, dw, ch - 18); ctx.strokeRect(cx + cw - 3 - dw, cy + 16, dw, ch - 18);
+      }
+      ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.strokeRect(cx, cy, cw, ch);
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 11px system-ui, sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(name + ' ' + (showLift ? n : '–') + '/' + L.capacity, cx + cw / 2 + 5, cy + 11);
+      return { cx: cx, cy: cy, cw: cw };
+    }
+    var ca = drawCar(AX, cyBotA, inA, ACCENT, 'A', fr.doorA), cb = drawCar(BX, cyBotB, inB, ACCENT_B, 'B', fr.doorB);
+    if (fr.moving) { tri(ctx, ca.cx + 8, ca.cy + 7, fr.up, 4.5, '#fff'); tri(ctx, cb.cx + 8, cb.cy + 7, !fr.up, 4.5, '#fff'); }
+    if (showLift) {
+      ctx.fillStyle = '#c53030'; ctx.font = 'bold 11px system-ui, sans-serif'; ctx.textAlign = 'center';
+      if (inA.length >= L.capacity) ctx.fillText('PLNO', ACX, ca.cy + ch / 2);
+      if (inB.length >= L.capacity) ctx.fillText('PLNO', BCX, cb.cy + ch / 2);
+    }
+    if (!showLift) dimOff(ctx);
+
+    /* lidé */
+    var maxL = Math.floor((AX - 30) / 13), maxR = Math.floor((CW - 80 - QX) / 13) + 1, nLiftQ = 0, nSlideQ = 0;
+    for (f = 0; f < F; f++) {
+      var lq = liftQ[f], sq = slideQ[f], yy = fy(f);
+      nLiftQ += lq.length; nSlideQ += sq.length;
+      if (showLift) {
+        if (f === 0 && hasSlides) {
+          // v přízemí stojí fronta na výtah vpravo – vlevo jsou výstupy z tobogánů
+          var max0 = Math.floor((CW - 12 - (BX + SW + 14)) / 13);
+          for (i = 0; i < Math.min(lq.length, max0); i++) person(ctx, BX + SW + 14 + i * 13, yy, lq[i].to, s, t - lq[i].t, lq[i].slow);
+          if (lq.length > max0) { ctx.fillStyle = INK; ctx.font = 'bold 11px system-ui, sans-serif'; ctx.textAlign = 'right'; ctx.fillText('+' + (lq.length - max0), CW - 8, yy - 30); }
+        } else {
+          for (i = 0; i < Math.min(lq.length, maxL); i++) person(ctx, AX - 12 - i * 13, yy, lq[i].to, s, t - lq[i].t, lq[i].slow);
+          if (lq.length > maxL) { ctx.fillStyle = INK; ctx.font = 'bold 11px system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.fillText('+' + (lq.length - maxL), 4, yy - 6); }
+        }
+        var up = false, dn = false;
+        lq.forEach(function (q) { if (q.to > f) up = true; else dn = true; });
+        tri(ctx, AX - 4, yy - fp + 12, true, 4, up ? '#f59e0b' : '#cbd5e0');
+        tri(ctx, AX - 4, yy - fp + 23, false, 4, dn ? '#f59e0b' : '#cbd5e0');
+      }
+      if (showSlide && f > 0) {
+        for (i = 0; i < Math.min(sq.length, maxR); i++) person(ctx, QX + i * 13, yy, 0, s, t - sq[i].t, sq[i].slow);
+        if (sq.length > maxR) { ctx.fillStyle = INK; ctx.font = 'bold 11px system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.fillText('+' + (sq.length - maxR), QX + maxR * 13, yy - 6); }
+        var sp = sitting[f];
+        if (sp) person(ctx, ENX + 6, yy, 0, s * 0.9, t - sp.t, sp.slow);
+      }
+    }
+    if (showSlide) {
+      // vylézá z otvoru směrem k divákovi a odchází doprava
+      outs.forEach(function (q) {
+        var k = q.tExit > q.tBottom ? clamp((t - q.tBottom) / (q.tExit - q.tBottom), 0, 1) : 1;
+        person(ctx, exitX(q.from) + 16 * k, g0, 0, s * 0.9, 0, q.slow);
+      });
+    }
+
+    ctx.fillStyle = MUTE; ctx.font = '10px system-ui, sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText('číslo nad hlavou = kam jede · červenější hlava = dlouho čeká' + (hasSlides ? ' · semafor: zelená = tobogán volný' : ''), 8, HH - 8);
+    return { liftQ: nLiftQ, slideQ: nSlideQ, inA: inA.length, inB: inB.length, riders: riders.length + sitting.filter(Boolean).length };
+  }
+  function slideDistAt(sp, tau) { return slideDist(sp, Math.max(0, tau)); }
+
+  /* Trasa trubky tobogánu v prostoru (jako točený tobogán):
+     při pohledu shora je to půlkruh – ze vstupu vpravo od výtahu vede dozadu za šachty a vrací se dopředu
+     k výstupu vlevo v přízemí. Zároveň plynule klesá: nahoře strměji, u výstupu skoro vodorovně (měkké dojetí).
+     Na obrazovce se hloubka z kreslí šikmým průmětem: čím dál vzadu, tím výš (DEPTH) a tím užší a tmavší trubka.
+     Výš položené tobogány mají širší oblouk, takže obíhají ty nižší zvenku. */
+  var DEPTH = 0.62, tubeCache = { key: '', paths: null };
+  function tubePaths(F, ENX, entY, exitX, exitY) {
+    var key = [F, ENX, entY(1), exitX(1), exitY].join(',');
+    if (tubeCache.key === key) return tubeCache.paths;
+    var paths = [null], zmax = (ENX - exitX(F - 1)) / 2, n = 72;
+    for (var f = 1; f < F; f++) {
+      var x0 = ENX, x3 = exitX(f), cx = (x0 + x3) / 2, R = (x0 - x3) / 2, y0 = entY(f), dy = exitY - y0;
+      var pts = [], acc = [0], i;
+      for (i = 0; i <= n; i++) {
+        var u = i / n, th = u * Math.PI, z = R * Math.sin(th), yl = y0 + dy * Math.sin(u * Math.PI / 2);
+        pts.push({ x: cx + R * Math.cos(th), y: yl - z * DEPTH, z: z / zmax, yl: yl, zz: z });
+        if (i) {
+          var A = pts[i - 1], Bp = pts[i];
+          acc.push(acc[i - 1] + Math.sqrt((Bp.x - A.x) * (Bp.x - A.x) + (Bp.yl - A.yl) * (Bp.yl - A.yl) + (Bp.zz - A.zz) * (Bp.zz - A.zz)));
+        }
+      }
+      paths.push({ pts: pts, acc: acc });
+    }
+    tubeCache = { key: key, paths: paths };
+    return paths;
+  }
+  function tubePoint(tb, k) {
+    var L = tb.acc[tb.acc.length - 1] * k, i = 1;
+    while (i < tb.acc.length - 1 && tb.acc[i] < L) i++;
+    var a = tb.acc[i - 1], b = tb.acc[i], w = b > a ? (L - a) / (b - a) : 0, P = tb.pts[i - 1], Q = tb.pts[i];
+    return { x: P.x + (Q.x - P.x) * w, y: P.y + (Q.y - P.y) * w, z: P.z + (Q.z - P.z) * w };
+  }
+  // trubka po úsecích: šířka a barva podle hloubky (vzadu užší a vybledlá do barvy pozadí, vpředu sytá)
+  function mixBg(r, g, b, z) {
+    var w = 0.5 * z;   // podíl pozadí (#eef2f7)
+    return 'rgb(' + Math.round(r + (238 - r) * w) + ',' + Math.round(g + (242 - g) * w) + ',' + Math.round(b + (247 - b) * w) + ')';
+  }
+  function drawTube(ctx, tb, W) {
+    var pts = tb.pts, i, pass;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    for (pass = 0; pass < 3; pass++) {
+      for (i = 1; i < pts.length; i++) {
+        var A = pts[i - 1], Bp = pts[i], z = (A.z + Bp.z) / 2, k = 1 - 0.5 * z, ox = 0, oy = 0;
+        if (pass === 0) { ctx.strokeStyle = mixBg(30 - 12 * z, 58 - 25 * z, 138 - 40 * z, z); ctx.lineWidth = W * k; }
+        else if (pass === 1) { ctx.strokeStyle = mixBg(59 - 20 * z, 130 - 45 * z, 246 - 60 * z, z); ctx.lineWidth = (W - 5) * k; }
+        else { ctx.strokeStyle = mixBg(219, 234, 254, z); ctx.lineWidth = 2.5 * k; ox = -1; oy = -W * 0.22 * k; }
+        ctx.beginPath(); ctx.moveTo(A.x + ox, A.y + oy); ctx.lineTo(Bp.x + ox, Bp.y + oy); ctx.stroke();
+      }
+    }
+  }
+  // kruhový otvor do trubky (vstup nebo výstup)
+  function hole(ctx, x, y, r) {
+    ctx.fillStyle = '#1e3a8a'; ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = '#0b1220'; ctx.beginPath(); ctx.arc(x, y, r - 3, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = 'rgba(191,219,254,.8)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(x, y, r - 1.5, Math.PI * 1.1, Math.PI * 1.75); ctx.stroke();
+  }
+
+  /* ------------------------------------------------------------------ *
+   *  ROZHRANÍ
+   * ------------------------------------------------------------------ */
+  var $ = function (id) { return document.getElementById(id); };
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function fmtT(s) { s = Math.max(0, s); return Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0'); }
+  function f1(x) { return x === null || x === undefined ? '–' : (Math.round(x * 10) / 10).toLocaleString('cs-CZ') + ' s'; }
+
+  var scn = null, res = null, results = null, variant = 'on', playT = 0, playing = false, lastTs = 0, view = 'all';
+  var STORE = 'pelcs-zadani-posledni', STORE_VIEW = 'pelcs-zobrazeni', STORE_VAR = 'pelcs-varianta';
+
+  /* karty */
+  Array.prototype.forEach.call(document.querySelectorAll('nav button'), function (b) {
+    b.addEventListener('click', function () { showTab(b.getAttribute('data-tab')); });
+  });
+  function showTab(name) {
+    Array.prototype.forEach.call(document.querySelectorAll('nav button'), function (b) { b.classList.toggle('on', b.getAttribute('data-tab') === name); });
+    $('tab-sim').classList.toggle('on', name === 'sim');
+    $('tab-manual').classList.toggle('on', name === 'manual');
+    if (name === 'sim' && res) draw();
+  }
+
+  /* přepínač zobrazení */
+  function setView(v) {
+    view = v;
+    Array.prototype.forEach.call(document.querySelectorAll('#viewSeg label'), function (l) {
+      var inp = l.querySelector('input'); inp.checked = inp.value === v; l.classList.toggle('on', inp.checked);
+    });
+    try { localStorage.setItem(STORE_VIEW, v); } catch (e) { /* nevadí */ }
+    draw();
+  }
+  /* přepínač varianty: s tobogány / bez tobogánů (obě se spočítají hned po načtení zadání) */
+  function setVariant(v) {
+    variant = v;
+    Array.prototype.forEach.call(document.querySelectorAll('#varSeg label'), function (l) {
+      var inp = l.querySelector('input'); inp.checked = inp.value === v; l.classList.toggle('on', inp.checked);
+    });
+    $('viewSlideLbl').hidden = v === 'off';
+    if (v === 'off' && view === 'slide') setView('all');
+    try { localStorage.setItem(STORE_VAR, v); } catch (e) { /* nevadí */ }
+    if (results) showVariant();
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('#varSeg input'), function (inp) {
+    inp.addEventListener('change', function () { if (inp.checked) setVariant(inp.value); });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('#viewSeg input'), function (inp) {
+    inp.addEventListener('change', function () { if (inp.checked) setView(inp.value); });
+  });
+
+  /* manuál: tabulka parametrů tobogánu */
+  (function () {
+    var rows = '<tr><th>Klíč</th><th>Význam</th><th class="num">Výchozí</th><th class="num">Nejméně</th><th class="num">Nejvíce</th><th>Jednotka</th><th>Poznámka</th></tr>';
+    RANGES.filter(function (r) { return r.path[0] === 'slide'; }).forEach(function (r) {
+      rows += '<tr><td><code>' + r.path.join('.') + '</code></td><td>' + esc(r.label) + '</td><td class="num">' + getPath(DEFAULTS, r.path) +
+        '</td><td class="num">' + r.min + '</td><td class="num">' + r.max + '</td><td>' + esc(r.unit) + '</td><td>' + esc(r.desc || '') + '</td></tr>';
+    });
+    $('rangeTbl').innerHTML = rows;
+  })();
+
+  /* načítání zadání */
+  function showMsg(kind, items) {
+    $('loadMsg').innerHTML = items.length ? '<div class="msg ' + kind + '"><ul>' + items.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>' : '';
+  }
+  function loadText(text, remember) {
+    var raw;
+    try { raw = JSON.parse(text.replace(/^﻿/, '')); }
+    catch (e) { showMsg('err', ['Soubor není platný JSON: ' + e.message]); return; }
+    var v = validate(raw);
+    if (!v.ok) { showMsg('err', v.errors); return; }
+    showMsg('warn', v.warnings);
+    scn = v.scenario;
+    if (remember) { try { localStorage.setItem(STORE, text); } catch (e) { /* bez paměti to půjde taky */ } }
+    var L = scn.lift, SP = slidePhysics(scn);
+    $('scnInfo').hidden = false;
+    $('scnInfo').innerHTML = '<b>' + esc(scn.name) + '</b>' + (scn.description ? ' – ' + esc(scn.description) : '') +
+      '<br>' + L.floors + ' pater · 2 kabiny po ' + L.capacity + ' osobách · ' + (L.floors - 1) + ' tobogánů · ' + scn.people.length + ' lidí · otisk zadání <b>' + scn.computedHash + '</b>' +
+      '<br>Tobogán z nejvyššího patra: ' + Math.round(SP.len[L.floors - 1]) + ' m, jízda ' + f1(SP.ride[L.floors - 1]) + ', nejvyšší rychlost ' + scn.slide.maxSpeed + ' m/s';
+    simulate();
+  }
+  function loadFile(f) {
+    var r = new FileReader();
+    r.onload = function () { loadText(String(r.result), true); };
+    r.onerror = function () { showMsg('err', ['Soubor se nepodařilo přečíst.']); };
+    r.readAsText(f, 'utf-8');
+  }
+  $('pickBtn').addEventListener('click', function () { $('file').click(); });
+  $('file').addEventListener('change', function () { if (this.files[0]) loadFile(this.files[0]); this.value = ''; });
+  $('pasteBtn').addEventListener('click', function () { $('pasteBox').hidden = !$('pasteBox').hidden; });
+  $('pasteApply').addEventListener('click', function () { loadText($('pasteText').value, true); });
+  $('demoBtn').addEventListener('click', function () { loadText(JSON.stringify(makeDemo()), true); });
+  var drop = $('drop');
+  ['dragenter', 'dragover'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('over'); }); });
+  ['dragleave', 'drop'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('over'); }); });
+  drop.addEventListener('drop', function (e) { if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+  window.addEventListener('dragover', function (e) { e.preventDefault(); });
+  window.addEventListener('drop', function (e) { e.preventDefault(); });
+
+  /* spuštění simulace a výsledky: spočítají se obě varianty, přehrává se vybraná */
+  function simulate() {
+    results = {};
+    ['on', 'off'].forEach(function (k) {
+      try { results[k] = run(scn, k === 'on'); }
+      catch (e) { results[k] = { ok: false, error: { phase: 'intern', message: String(e && e.message || e), line: null, time: 0 }, log: [] }; }
+    });
+    $('result').hidden = false;
+    playT = 0;
+    showVariant();
+  }
+
+  function showVariant() {
+    res = results[variant];
+    playing = false; $('playBtn').textContent = '▶ Spustit';
+    $('log').textContent = res.log.length ? res.log.join('\n') : '(nic)';
+    var msgBox = $('runMsg');
+    msgBox.innerHTML = '';
+
+    if (!res.ok) {
+      var er = res.error, where = { rozhodni: 've funkci rozhodni()', nastup: 've funkci nastup()', zacatek: 've funkci zacatek()', syntax: 'v kódu' }[er.phase] || '';
+      msgBox.innerHTML = '<div class="msg err"><b>Chyba ' + esc(where) + '</b>' + (er.time ? ' (simulovaný čas ' + fmtT(er.time) + ')' : '') + ':<br>' + esc(er.message) +
+        (er.line ? '<br><small>Řádek ' + er.line + ' v souboru PelcS.html</small>' : '') + '</div>';
+      $('metrics').innerHTML = ''; $('peopleTbl').innerHTML = '';
+      $('liveInfo').textContent = '';
+      var c = $('cv'); c.getContext('2d').clearRect(0, 0, c.width, c.height);
+      $('scrub').disabled = true; $('playBtn').disabled = true;
+      return;
+    }
+    $('scrub').disabled = false; $('playBtn').disabled = false;
+    var m = res.metrics;
+    if (!res.finished) msgBox.innerHTML = '<div class="msg warn">Simulace skončila po ' + fmtT(res.endTime) + ' (nejdelší doba), ale nedojeli všichni: ' + m.delivered + ' z ' + m.total + '.</div>';
+
+    // srovnání obou variant vedle sebe
+    var on = results.on.ok ? results.on.metrics : null, off = results.off.ok ? results.off.metrics : null;
+    function col(mm, fn, slideOnly) { return !mm ? '–' : (slideOnly && mm === off) ? '–' : fn(mm); }
+    var ROWS = [
+      ['Rozvezeno', function (x) { return x.delivered + ' z ' + x.total; }],
+      ['Hotovo v čase', function (x) { return x.tAll === null ? '–' : fmtT(x.tAll); }],
+      ['Průměrné čekání', function (x) { return f1(x.avgWait); }],
+      ['Průměrná jízda', function (x) { return f1(x.avgRide); }],
+      ['<b>Průměrně celkem</b>', function (x) { return '<b>' + f1(x.avgTotal) + '</b>'; }],
+      ['Nejdelší čekání', function (x) { return f1(x.maxWait); }],
+      ['Nejdelší celkem', function (x) { return f1(x.maxTotal); }],
+      ['Rozvezeno do ' + scn.evaluation.horizon + ' s', function (x) { return x.servedInHorizon; }],
+      ['Do přízemí výtahem (lidí · průměr)', function (x) { return x.down.lift + ' · ' + f1(x.down.lift ? x.down.liftT / x.down.lift : null); }, false, 'sep'],
+      ['Do přízemí tobogánem (lidí · průměr)', function (x) { return x.down.slide + ' · ' + f1(x.down.slide ? x.down.slideT / x.down.slide : null); }, true],
+      ['Přešli z fronty na výtah na tobogán', function (x) { return x.switches; }, true],
+      ['Převezla kabina A / B', function (x) { return x.byCar.A + ' / ' + x.byCar.B; }, false, 'sep'],
+      ['Zastavení výtahu', function (x) { return x.stops; }],
+      ['Ujetá dráha (kabina A)', function (x) { return Math.round(x.dist) + ' m'; }],
+    ];
+    var cOn = variant === 'on' ? ' class="cur"' : '', cOff = variant === 'off' ? ' class="cur"' : '';
+    var html = '<tr><th></th><th' + cOn + '>S tobogány</th><th' + cOff + '>Bez tobogánů</th></tr>';
+    ROWS.forEach(function (r) {
+      html += '<tr' + (r[3] ? ' class="' + r[3] + '"' : '') + '><td>' + r[0] + '</td><td' + cOn + '>' + col(on, r[1], r[2]) + '</td><td' + cOff + '>' + col(off, r[1], r[2]) + '</td></tr>';
+    });
+    $('metrics').innerHTML = html;
+    if (on && off && on.avgTotal !== null && off.avgTotal !== null) {
+      var dd = off.avgTotal - on.avgTotal;
+      msgBox.innerHTML += '<div class="info" style="margin:0 0 6px">Tobogány ' + (dd >= 0 ? 'zkrátily' : 'prodloužily') + ' průměrnou dobu cesty o <b>' +
+        f1(Math.abs(dd)) + '</b> (' + Math.round(Math.abs(dd) / off.avgTotal * 100) + ' %).</div>';
+    }
+
+    var rows = '<tr><th class="num">#</th><th class="num">Příchod</th><th>Odkud → kam</th><th>Cesta</th><th class="num">Čekal</th><th class="num">Jel</th><th class="num">Celkem</th></tr>';
+    res.persons.forEach(function (p) {
+      var start = p.mode === 'slide' ? p.tSit : p.tBoard, done = p.tExit !== null;
+      var way = p.mode === 'slide' ? 'tobogán' + (p.switched ? ' (přešel)' : '') : p.car ? 'výtah ' + p.car : '–';
+      rows += '<tr><td class="num">' + p.id + '</td><td class="num">' + f1(p.t) + '</td><td>' + p.from + ' → ' + p.to + (p.slow > 1 ? ' (pomalý ×' + p.slow + ')' : '') + '</td><td>' + way + '</td>' +
+        '<td class="num">' + (start !== null ? f1(start - p.t) : '–') + '</td><td class="num">' + (done ? f1(p.tExit - start) : '–') +
+        '</td><td class="num">' + (done ? f1(p.tExit - p.t) : '–') + '</td></tr>';
+    });
+    $('peopleTbl').innerHTML = rows;
+
+    playT = Math.min(playT, res.endTime);
+    draw();
+  }
+
+  function draw() {
+    if (!res || !res.ok) return;
+    var info = drawScene($('cv'), scn, res, playT, view);
+    $('clock').textContent = fmtT(playT) + ' / ' + fmtT(res.endTime);
+    $('liveInfo').textContent = 'Čeká na výtah: ' + info.liftQ + ' · v kabině A: ' + info.inA + ' · v kabině B: ' + info.inB +
+      (res.slides ? ' · fronta na tobogány: ' + info.slideQ + ' · na tobogánech: ' + info.riders : '');
+    $('scrub').value = res.endTime ? Math.round(playT / res.endTime * 1000) : 0;
+  }
+  function tickAnim(ts) {
+    if (!playing) return;
+    var dt = Math.min(0.1, (ts - lastTs) / 1000); lastTs = ts;
+    playT += dt * (+$('speed').value);
+    if (playT >= res.endTime) { playT = res.endTime; playing = false; $('playBtn').textContent = '▶ Znovu'; }
+    draw();
+    if (playing) requestAnimationFrame(tickAnim);
+  }
+  $('playBtn').addEventListener('click', function () {
+    if (!res || !res.ok) return;
+    if (playing) { playing = false; this.textContent = '▶ Pokračovat'; return; }
+    if (playT >= res.endTime) playT = 0;
+    playing = true; this.textContent = '⏸ Pauza';
+    lastTs = performance.now(); requestAnimationFrame(tickAnim);
+  });
+  $('restartBtn').addEventListener('click', function () { playT = 0; playing = false; $('playBtn').textContent = '▶ Spustit'; draw(); });
+  $('scrub').addEventListener('input', function () { if (!res || !res.ok) return; playT = this.value / 1000 * res.endTime; draw(); });
+  window.addEventListener('resize', draw);
+
+  /* po načtení stránky: poslední zobrazení a zadání z paměti prohlížeče */
+  try {
+    var lv = localStorage.getItem(STORE_VIEW);
+    if (lv === 'all' || lv === 'lift' || lv === 'slide') setView(lv);
+    var lvar = localStorage.getItem(STORE_VAR);
+    if (lvar === 'on' || lvar === 'off') setVariant(lvar);
+    var last = localStorage.getItem(STORE);
+    if (last) loadText(last, false);
+  } catch (e) { /* bez paměti */ }
+})();
+</script>
+</body>
+</html>
