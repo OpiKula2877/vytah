@@ -755,10 +755,11 @@ function nastup(stav, osoba, kabina) {
     // kdo nedojel, nemá čas výstupu (i kdyby ho měl naplánovaný po konci simulace)
     P.forEach(function (q) { if (q.tExit !== null && q.tExit > endTime + 1e-9) q.tExit = null; });
 
-    var sw = 0, sr = 0, st = 0, nb = 0, mw = 0, mt = 0, tAll = 0, inH = 0, nd = 0, i;
+    var sw = 0, sr = 0, st = 0, nb = 0, mw = 0, mt = 0, tAll = 0, inH = 0, nd = 0, liftDone = null, lastArr = 0, i;
     var down = { slide: 0, lift: 0, slideT: 0, liftT: 0 }, byCar = { A: 0, B: 0 };
     for (i = 0; i < N; i++) {
       var q = P[i], start = q.mode === 'slide' ? q.tSit : q.tBoard;
+      if (q.t > lastArr) lastArr = q.t;
       if (start !== null) { var wt = start - q.t; nb++; sw += wt; if (wt > mw) mw = wt; }
       if (q.tExit !== null) {
         var tot = q.tExit - q.t; nd++; st += tot; sr += q.tExit - start;
@@ -766,7 +767,7 @@ function nastup(stav, osoba, kabina) {
         if (q.to === 0 && q.from > 0) {
           if (q.mode === 'slide') { down.slide++; down.slideT += tot; } else { down.lift++; down.liftT += tot; }
         }
-        if (q.car) byCar[q.car]++;
+        if (q.car) { byCar[q.car]++; if (liftDone === null || q.tExit > liftDone) liftDone = q.tExit; }
       }
     }
     var finished = nd === N;
@@ -776,7 +777,7 @@ function nastup(stav, osoba, kabina) {
         total: N, delivered: nd, finished: finished, tAll: finished ? tAll : null,
         avgTotal: nd ? st / nd : null, avgWait: nb ? sw / nb : null, avgRide: nd ? sr / nd : null,
         maxWait: mw, maxTotal: mt, stops: stops, dist: dist, servedInHorizon: inH,
-        down: down, switches: switches, byCar: byCar,
+        down: down, switches: switches, byCar: byCar, liftDone: liftDone, lastArr: lastArr,
       },
       persons: P.map(function (q) {
         return { id: q.id, t: q.t, from: q.from, to: q.to, slow: q.slow, mode: q.mode, car: q.car, switched: q.switched,
@@ -1187,7 +1188,9 @@ function nastup(stav, osoba, kabina) {
     function col(mm, fn, slideOnly) { return !mm ? '–' : (slideOnly && mm === off) ? '–' : fn(mm); }
     var ROWS = [
       ['Rozvezeno', function (x) { return x.delivered + ' z ' + x.total; }],
-      ['Hotovo v čase', function (x) { return x.tAll === null ? '–' : fmtT(x.tAll); }],
+      ['Poslední příchod', function (x) { return fmtT(x.lastArr) + ' (' + f1(x.lastArr) + ')'; }],
+      ['Hotovo v čase (dojel poslední)', function (x) { return x.tAll === null ? '–' : fmtT(x.tAll) + ' (' + f1(x.tAll) + ')'; }],
+      ['Výtah dokončil poslední jízdu', function (x) { return x.liftDone === null ? '–' : fmtT(x.liftDone) + ' (' + f1(x.liftDone) + ')'; }],
       ['Průměrné čekání', function (x) { return f1(x.avgWait); }],
       ['Průměrná jízda', function (x) { return f1(x.avgRide); }],
       ['<b>Průměrně celkem</b>', function (x) { return '<b>' + f1(x.avgTotal) + '</b>'; }],
