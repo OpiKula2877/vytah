@@ -7,6 +7,7 @@ Web: <https://vytah.opikula.dev>
 - [index.html](index.html) – rozcestník
 - [PelcS.html](PelcS.html) – simulace s tobogány (2 kabiny po plné kapacitě)
 - [PelcS-ferovka.html](PelcS-ferovka.html) – férové srovnání s původním výtahem (2 kabiny po polovině kapacity)
+- [PelcS-paternoster.html](PelcS-paternoster.html) – smyčka dvoumístných kabin (vlevo nahoru, vpravo dolů, motor v −1. patře), s tobogány i bez nich
 - [zadani-bezny-den-ve-skole-B746-8C6D.json](zadani-bezny-den-ve-skole-B746-8C6D.json) – zadání
 
 ## Autoři
