@@ -874,6 +874,9 @@ function nastup(stav, osoba, kabina) {
       ctx.fillText(f === 0 ? 'přízemí' : f + '. patro', CW - 8, fy(f) - fp + 15);
     }
 
+    /* čekárna v přízemí tam, kde stojí fronta na výtah (s tobogány vpravo, bez nich vlevo) */
+    if (hasSlides) drawLounge(ctx, BX + SW + 8, CW - 4, g0, fp); else drawLounge(ctx, 6, AX - 6, g0, fp);
+
     /* tobogány (za šachtami) – ve variantě bez tobogánů se nekreslí vůbec */
     if (hasSlides && !showSlide) dimOn(ctx);
     for (f = hasSlides ? TOP : 0; f >= 1; f--) {
@@ -994,6 +997,58 @@ function nastup(stav, osoba, kabina) {
     ctx.fillStyle = MUTE; ctx.font = '10px system-ui, sans-serif'; ctx.textAlign = 'left';
     ctx.fillText('číslo nad hlavou = kam jede · červenější hlava = dlouho čeká' + (hasSlides ? ' · semafor: zelená = tobogán volný' : ''), 8, HH - 8);
     return { liftQ: nLiftQ, slideQ: nSlideQ, inA: inA.length, inB: inB.length, riders: riders.length + sitting.filter(Boolean).length };
+  }
+  /* Čekárna v přízemí: obložená stěna, cedule, lavičky, kávovar a květiny tam, kde stojí fronta.
+     Kreslí se za lidmi, takže čekající stojí (a sedí) před ní. */
+  function drawLounge(ctx, x0, x1, yF, fp) {
+    var w = x1 - x0, i;
+    if (w < 60) return;
+    ctx.save();
+    // obložení stěny a lišta
+    ctx.fillStyle = '#fbf3e4'; ctx.fillRect(x0, yF - fp * 0.62, w, fp * 0.62);
+    ctx.fillStyle = '#e7d3ad'; ctx.fillRect(x0, yF - fp * 0.62, w, 3);
+    // cedule
+    ctx.fillStyle = '#7c2d12'; rrect(ctx, x0 + 6, yF - fp + 5, 62, 15, 4); ctx.fill();
+    ctx.fillStyle = '#fff7ed'; ctx.font = 'bold 10px system-ui, sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText('☕ Čekárna', x0 + 10, yF - fp + 16);
+    // květina v květináči
+    function plant(x) {
+      ctx.fillStyle = '#c2410c';
+      ctx.beginPath(); ctx.moveTo(x - 6, yF - 11); ctx.lineTo(x + 6, yF - 11); ctx.lineTo(x + 4.5, yF); ctx.lineTo(x - 4.5, yF); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#9a3412'; ctx.fillRect(x - 7, yF - 13, 14, 3);
+      ctx.fillStyle = '#15803d';
+      [[-5, -22, 4, 9, -0.5], [5, -22, 4, 9, 0.5], [0, -27, 4, 10, 0], [-8, -17, 3, 6, -1], [8, -17, 3, 6, 1]].forEach(function (l) {
+        ctx.beginPath(); ctx.ellipse(x + l[0], yF + l[1], l[2], l[3], l[4], 0, 2 * Math.PI); ctx.fill();
+      });
+      ctx.fillStyle = '#f472b6'; ctx.beginPath(); ctx.arc(x + 1, yF - 33, 2.5, 0, 2 * Math.PI); ctx.fill();
+    }
+    // kávovar se šálkem
+    function coffee(x) {
+      ctx.fillStyle = '#334155'; rrect(ctx, x - 9, yF - 32, 18, 32, 3); ctx.fill();
+      ctx.fillStyle = '#94a3b8'; ctx.fillRect(x - 6, yF - 28, 12, 7);
+      ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(x + 4, yF - 17, 1.5, 0, 2 * Math.PI); ctx.fill();
+      ctx.fillStyle = '#1e293b'; ctx.fillRect(x - 6, yF - 14, 12, 9);
+      ctx.fillStyle = '#fff'; ctx.fillRect(x - 3, yF - 10, 6, 5);
+      ctx.fillStyle = '#7c2d12'; ctx.fillRect(x - 2, yF - 9, 4, 1.5);
+      ctx.strokeStyle = 'rgba(148,163,184,.8)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x - 1, yF - 13); ctx.quadraticCurveTo(x - 3, yF - 16, x - 1, yF - 19); ctx.stroke();
+    }
+    // lavička (opěradlo, sedák, nohy)
+    function bench(x, bw) {
+      ctx.fillStyle = '#92400e';
+      ctx.fillRect(x, yF - 21, bw, 3); ctx.fillRect(x, yF - 16, bw, 2);
+      ctx.fillStyle = '#b45309'; ctx.fillRect(x - 1, yF - 11, bw + 2, 4);
+      ctx.fillStyle = '#57534e';
+      ctx.fillRect(x + 2, yF - 7, 2, 7); ctx.fillRect(x + bw - 4, yF - 7, 2, 7);
+      ctx.fillRect(x + 2, yF - 21, 2, 10); ctx.fillRect(x + bw - 4, yF - 21, 2, 10);
+    }
+    plant(x0 + 10);
+    plant(x1 - 10);
+    coffee(x1 - 30);
+    var bx0 = x0 + 24, bx1 = x1 - 46, bw = 40, gap = 14, nB = Math.max(0, Math.floor((bx1 - bx0 + gap) / (bw + gap)));
+    var off = bx0 + ((bx1 - bx0) - (nB * (bw + gap) - gap)) / 2;
+    for (i = 0; i < nB; i++) bench(off + i * (bw + gap), bw);
+    ctx.restore();
   }
   function slideDistAt(sp, tau) { return slideDist(sp, Math.max(0, tau)); }
 
